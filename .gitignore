@@ -1,0 +1,8 @@
+# cache
+*/__pycache__
+.vscode
+.initial_load.py
+
+
+# json 
+*.json

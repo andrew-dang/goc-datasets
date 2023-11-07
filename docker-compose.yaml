@@ -1,0 +1,87 @@
+version: '3'
+
+services:
+  ### Database for datasets
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=goc_open_data
+    ports:
+    - 5433:5432
+    volumes:
+      - database_data:/var/lib/postgresql/data
+
+  ### Prefect Database
+  database:
+    image: postgres:13
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=prefect
+    expose:
+      - 5432
+    volumes: 
+      - db:/var/lib/postgresql/data
+    # profiles: ["orion"]
+  
+
+  ### Prefect Orion API
+  server:
+    image: prefecthq/prefect:2-python3.11
+    restart: always
+    volumes:
+      - prefect:/root/.prefect
+    entrypoint:  ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
+    environment:
+      - PREFECT_UI_URL=http://127.0.0.1:4200/api
+      - PREFECT_API_URL=http://127.0.0.1:4200/api
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@database:5432/prefect
+    ports:
+      - 4200:4200
+    depends_on:
+      - database
+    # profiles: ["orion"]
+
+  ## Prefect Agent
+  worker:
+    image: prefect-psycopg2:latest 
+    restart: always
+    entrypoint: ["prefect", "worker", "start", "-p", "default"]
+    environment:
+      - PREFECT_API_URL=http://server:4200/api
+    depends_on:
+      - server
+    volumes: 
+      - "./flows:/root/flows"
+      - "./data:/root/data"
+    # profiles: ["agent"]
+
+
+  ### Prefect CLI
+  cli:
+    image: prefect-psycopg2:latest 
+    tty: true
+    entrypoint: "bash"
+    working_dir: "/root/flows"
+    volumes:
+      - "./flows:/root/flows"
+      - "./etl_code:/root/etl_code"
+      - "./data:/root/data"
+      - ".initial_load.py:/root/initial_load.py"
+    environment:
+      - PREFECT_API_URL=http://server:4200/api
+    # profiles: ["cli"]
+
+
+volumes:
+  prefect:
+  db:
+  database_data:
+  # minio:
+networks:
+  default:
+    name: prefect-network
