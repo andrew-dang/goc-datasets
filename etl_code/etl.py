@@ -128,41 +128,6 @@ def get_net_new_datasets() -> dict:
 ###############
 ## TRANSFORM ##
 ###############
-def get_relevant_data(extract: dict) -> dict:
-    """
-    From the extracted data from CKAN, get the fields we are interested in. 
-    
-    id (str): ID of the dataset
-    title (str): Title of the dataset. This has gone through some text preprocessing. 
-    notes_translated (dict): Description of the dataset in both French and English.
-    keywords (dict): Keywords dataset has been tagged with. Available in French and English. 
-    resources (list): Files associated with the dataset. 
-    metadata_created (str): Date metadata on GoC website was created. 
-    metadata_modified (str): Date that the metadata on the GoC website was last modified. 
-    isopen (bool): Whether the dataset is in use? Not too sure about this one
-    url (str): The URL to the dataset. 
-    
-    """
-    
-    # Keys from the extracted data we are interested in. 
-    KEYS = ['id', 'title', 'notes_translated', 'keywords', 'resources', 
-            'metadata_created', 'metadata_modified', 'isopen', 'url']
-    
-    relevant_data = {k:{key: v[key] for key in KEYS} for k,v in extract.items()}
-    
-    return relevant_data
-
-def get_resource_dict(relevant_data: dict) -> dict:
-    """
-    For each dataset, extract the list of resources (files). This will
-    be used later to create a table of all available resources. 
-    """
-    
-    # For evert resource in the resources key (which is a list), only get information from resource keys
-    resource_dict = {dataset_name: {"id": v["id"], "resources": v["resources"]} for dataset_name,v in relevant_data.items()}
-    
-    return resource_dict
-
 def get_english_url(url: str) -> str:
     """
     The URL value is a string that appears to be a dictionary.
@@ -207,9 +172,9 @@ def get_french_url(url: str) -> str:
     
     return processed_url
     
-def create_dataset_table(relevant_data: dict) -> pd.DataFrame:
+def create_dataset_table(datasets_data: dict) -> pd.DataFrame:
     """
-    Using the relevant data dictionary, build a pandas DataFrame
+    Build a pandas DataFrame containing the data from the KEYS list
     that has a row for each dataset. Each row will have the 
     dataset id, title, dataset creation date, the last update date, 
     dataset URL, keywords, and notes.
@@ -218,7 +183,7 @@ def create_dataset_table(relevant_data: dict) -> pd.DataFrame:
     KEYS = ["id", "title", "url", "notes_translated", "keywords", "metadata_created", "metadata_modified", "isopen"]
     
     # Iterate through each dataset getting the value from the keys above
-    table_data = [[v[key] for key in KEYS] for k,v in relevant_data.items()]
+    table_data = [[v[key] for key in KEYS] for k,v in datasets_data.items()]
     
     # Column names 
     columns = ["id", "title", "url", "notes_translated", "keywords", "created_date", "last_update_date", "isopen"]
@@ -265,7 +230,7 @@ def create_dataset_table(relevant_data: dict) -> pd.DataFrame:
 
     return df
 
-def create_resource_table(resource_dict):
+def create_resource_table(datasets_dict):
     """
     Create a table for all resources in the dataset. 
     """
@@ -273,8 +238,8 @@ def create_resource_table(resource_dict):
     table_data = []
     
     # Loop through each dataset in resource dict
-    for dataset in resource_dict:
-        dataset_dict = resource_dict[dataset]
+    for dataset in datasets_dict:
+        dataset_dict = datasets_dict[dataset]
         dataset_id = dataset_dict['id']
 
         for resource in dataset_dict['resources']: # resource is a dictionary 

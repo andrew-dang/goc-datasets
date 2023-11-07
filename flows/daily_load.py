@@ -1,8 +1,9 @@
 from prefect import flow, task 
 from datetime import datetime 
 from etl_code.etl import * 
-from etl_code.config import config
+from etl_code.config import config, db_engine
 import requests
+from sqlalchemy import text
 
 @task
 def get_net_new_datasets_task():
@@ -10,15 +11,19 @@ def get_net_new_datasets_task():
     Compare datasets that we have on record vs. datasets that are available on 
     the Open Data Portal. Find what is missing and return a list of missing dataset
     IDs.
-    
-    NOTE: During production, we want to query our database to see what IDs we 
-    currently have. For testing, I am using a JSON file. 
-    
+
     """
-    # Read in Data
-    df = pd.read_json("dataset_table.json")
     
-    # Create list of datasets
+    # Look for datasets already collected
+    query = """
+    SELECT id 
+    FROM datasets
+    """
+    
+    # Execute query and load results into pandas DataFrame
+    df = pd.DataFrame(db_engine().connect().execute(text(query)))
+    
+    # Create list of datasets already collected
     existing_datasets = df.id.tolist()
     
     # Get IDs available on Open Data Portal 

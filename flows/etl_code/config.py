@@ -19,7 +19,7 @@ def config(filename='database.ini', section='postgresql'):
 
     return db
 
-def engine():
+def db_engine():
     cfg = config()
     conn_string = f"postgresql://{cfg['user']}:{cfg['password']}@{cfg['host']}:{cfg['port']}/{cfg['database']}"
     engine = create_engine(conn_string)
