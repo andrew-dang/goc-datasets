@@ -11,7 +11,7 @@ import psycopg2
 import psycopg2.extras as extras
 
 # relative import 
-from config import config
+from etl_code.config import config
 
 import logging 
 logging.basicConfig(level=logging.INFO)

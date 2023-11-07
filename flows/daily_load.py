@@ -49,7 +49,7 @@ def get_net_new_datasets_task():
     
     # Write dict to file
     today = datetime.now().strftime("%Y-%m-%d")
-    filename = f'../data/net_new_data_{today}'
+    filename = f'../data/net_new_data_{today}.json'
 
     with open(f'{filename}', "w") as f:
         json.dump(net_new_dict, f)
